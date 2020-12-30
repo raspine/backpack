@@ -345,6 +345,7 @@ backups to my home e.g. two times per year, connect the USB cable to the RPi
 and just run rsync_nas.sh manually.
 
 ### Automatic/scheduled backups
+([Arch wiki ref](https://wiki.archlinux.org/index.php/Systemd/Timers)
 Create a systemd service that runs rsync_nas.sh.
 ```bash
 # echo -e "[Unit]
