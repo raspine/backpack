@@ -5,11 +5,11 @@ A recepy for makings backups using a RPi and an external USB HDD (and tejp..).
 Since making backups manually is extremely boring and easy to forgett,
 backups needs to be simple to do manually and/or automated.
 
-([rsync](https://rsync.samba.org/)) is our champion that perfectly aligns
-directories and files, however most guides I found only cover the rsync part
-and I wanted a more complete instruction with things like:
+[rsync](https://rsync.samba.org/) is our champion that perfectly aligns
+directories and files between two HDD:s, however most guides I found only cover
+the rsync part and I wanted a more complete instruction covering:
 
-* keep the installation minimal and as rugged as possible
+* system installation from scratch with typical config steps
 * long term operation such as avoid wearing out the RPi SD card
 * S.M.A.R.T monitoring of the HDD with e-mail notification
 * rsync with e-mail notification
@@ -151,7 +151,7 @@ Arch does not enable swap by default so nothing to do here. Check with:
 ### tmpfs
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/tmpfs))
 
-Use tmpfs for various locations.
+Use tmpfs for various locations instead of writing to SD card.
 
 ```bash
 # echo "tmpfs   /var/log    tmpfs    defaults,noatime,nosuid,mode=0755,size=40m    0 0" >> /etc/fstab
@@ -165,6 +165,12 @@ Use tmpfs for various locations.
 When using tmpfs the /var/log/journal directory will not be re-created and
 journald will instead write to /run/systemd/journal in a non-persistent way.
 This seems to be the preferred way so no configuration is needed.
+We can also limit the journal size:
+```bash
+# mkdir /etc/systemd/journald.conf.d
+# echo -e "[Journal]
+SystemMaxUse=50M" > /etc/systemd/journald.conf.d/00-journal-size.conf
+```
 
 ## Configure email notification
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/Msmtp))
@@ -319,13 +325,13 @@ sudo chown $USER_NAME:$USER_NAME $LOG_FILE
 # do rsync for each directory
 for (( i=0; i<${#SRC_DIRS[@]}; i++ ));
 do
-  echo -e "rsync ${SRC_DIRS[$i]}:\n================================================================================\n" >> $LOG_FILE
+  echo -e "rsync ${SRC_DIRS[$i]}:\n===========================================================================\n" >> $LOG_FILE
   rsync -av --delete --log-file=$LOG_FILE ${SRC_DIRS[$i]} ${DEST_DIRS[$i]} &> /dev/null
 done
 
 # mail the log file
-ERR=`cat $LOG_FILE | mail -s "backpack1 rsync result" "$EMAIL"`
-[ ! -z "$ERR" ] && echo "$ERR" | mail -s "backpack1 rsync error" "$EMAIL"
+ERR=`cat $LOG_FILE | mail -s "$HOSTNAME rsync result" "$EMAIL"`
+[ ! -z "$ERR" ] && echo "$ERR" | mail -s "$HOSTNAME rsync error" "$EMAIL"
 ```
 
 ## Backup schemes
