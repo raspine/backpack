@@ -19,7 +19,6 @@ This guide uses a step-by-step approach so nothing is forgotten. For details
 about the various steps, refer to the links in the Arch wiki.
 
 ## Install Arch Linux
-
 [Arch Linux ARM](https://archlinuxarm.org) provides a pretty small initial
 footprint so that's my starting point.
 
@@ -29,7 +28,6 @@ When the RPi boots up, log in as root (ssh server is enabled by default) and
 continue with this instruction.
 
 ### Update Arch Linux
-
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/pacman))
 
 System update:
@@ -44,7 +42,6 @@ System update:
 When the RPi boots up, log in as root and continue with this instruction.
 
 ## Manage accounts
-
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/users_and_groups))
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/sudo))
 
@@ -70,7 +67,6 @@ Install `sudo` and allow for passwordless operation.
 ```
 
 ## Set keyboard layout
-
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/Keyboard_configuration_in_console))
 
 List all keyboard layouts:
@@ -225,7 +221,6 @@ daily temperature alarms and 45 seems to be an acceptable upper limit.
 ```
 
 ## Prepare external HDD
-
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/NTFS-3G))
 
 For maximum portability I use Windows NTFS as file system for the external HDD.
@@ -253,8 +248,8 @@ In case the HDD needs formating:
 ```
 
 ## Mounting
-
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/fstab))
+([Arch wiki ref](https://wiki.archlinux.org/index.php/NFS))
 
 Create mount points (for every source/backup directory):
 
@@ -265,8 +260,6 @@ Create mount points (for every source/backup directory):
 ```
 
 As my NAS provides NFS shares, install nfs-utils:
-
-([Arch wiki ref](https://wiki.archlinux.org/index.php/NFS))
 
 ```bash
 # pacman -S nfs-utils
@@ -290,7 +283,6 @@ $ ls /mnt/<shared_dir1>
 ```
 
 ## rsync
-
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/rsync))
 
 rsync is used to copy file from shared network directories to the external HDD.
@@ -318,20 +310,21 @@ declare -a SRC_DIRS=("/mnt/shared_dir1" "/mnt/shared_dir2")
 declare -a DST_DIRS=("/mnt/exthdd/shared_dir1" "/mnt/exthdd/shared_dir2")
 
 # create empty log file so it only include the last rsync log
-rm $LOG_FILE &> /dev/null
+sudo rm $LOG_FILE &> /dev/null
 sudo touch $LOG_FILE
 sudo chown $USER_NAME:$USER_NAME $LOG_FILE
 
 # do rsync for each directory
 for (( i=0; i<${#SRC_DIRS[@]}; i++ ));
 do
-  echo -e "rsync ${SRC_DIRS[$i]}:\n===========================================================================\n" >> $LOG_FILE
-  rsync -av --delete --log-file=$LOG_FILE ${SRC_DIRS[$i]} ${DEST_DIRS[$i]} &> /dev/null
+  echo -e "\nrsync ${SRC_DIRS[$i]}:\n===========================================================================" >> $LOG_FILE
+  rsync -av --delete --log-file=$LOG_FILE ${SRC_DIRS[$i]} ${DST_DIRS[$i]} &> /dev/null
 done
 
 # mail the log file
-ERR=`cat $LOG_FILE | mail -s "$HOSTNAME rsync result" "$EMAIL"`
-[ ! -z "$ERR" ] && echo "$ERR" | mail -s "$HOSTNAME rsync error" "$EMAIL"
+SEND_ERR=`cat $LOG_FILE | mail -s "$HOSTNAME rsync result" "$EMAIL"`
+[ ! -z "$SEND_ERR" ] && echo "$SEND_ERR" | mail -s "$HOSTNAME send error" "$EMAIL"
+exit 0
 ```
 
 ## Backup schemes
@@ -346,33 +339,40 @@ and just run rsync_nas.sh manually.
 
 ### Automatic/scheduled backups
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/Systemd/Timers))
-Create a systemd service that runs rsync_nas.sh.
+([Arch wiki ref](https://wiki.archlinux.org/index.php/systemd/User))
+
+As all config/script files, specific to the backup service, lives under
+a specific user account I create a systemd *user* service that runs
+rsync_nas.sh.
+
 ```bash
-# echo -e "[Unit]
+$ mkdir -p ~/.config/systemd/user
+$ echo -e "[Unit]
 Description=rsync job
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash /home/<username>/rsync_nas.sh" > /etc/systemd/system/rsync_nas.service
+ExecStart=/bin/bash /home/<username>/rsync_nas.sh" > ~/.config/systemd/user/rsync_nas.service
 ```
 
 Create a systemd timer that runs above service at regular intervals.
 ```bash
-# echo -e "[Unit]
+$ echo -e "[Unit]
 Description=Run rsync_nas first Saturday every month
 
 [Timer]
-OnCalender=Sat *-*-1..7 05:00:00
+OnCalendar=Sat *-*-1..7 05:00:00
 Persistent=true
 
 [Install]
-WantedBy=timers.target" > /etc/systemd/system/rsync_nas.timer
+WantedBy=timers.target" > ~/.config/systemd/user/rsync_nas.timer
 ```
 
 Enable/start timer service.
 ```bash
-# systemctl daemon-reload
-# systemctl enable rsync_nas.timer
-# systemctl start rsync_nas.timer
+$ systemctl --user daemon-reload
+$ systemctl --user enable rsync_nas.timer
+# This line makes the rsync_nas.timer service start at boot
+$ sudo loginctl enable-linger <username>
 ```
 
