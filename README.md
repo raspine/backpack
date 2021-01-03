@@ -251,12 +251,13 @@ In case the HDD needs formating:
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/fstab))
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/NFS))
 
-Create mount points (for every source/backup directory):
+Create mount points source/destination directories:
 
 ```bash
-# mkdir -p /mnt/exthdd/<shared_dir1>
-# mkdir -p /mnt/<shared_dir1>
-# chown -R <username>:<username> /mnt/<shared_dir1>
+# mkdir -p /mnt/exthdd/<opt_subfolder>
+# mkdir -p /mnt/<source_dir1>
+# chown -R <username>:<username> /mnt/<source_dir1>
+## repeat for all <source_dir1> to backup
 ```
 
 As my NAS provides NFS shares, install nfs-utils:
@@ -272,14 +273,14 @@ in /etc/fstab:
 ...
 
 /dev/sda1  /mnt/exthdd  ntfs  defaults  0  0
-<NAS ip address>:/srv/nfs4/<shared_dir1>  /mnt/<shared_dir1>  nfs  noauto,vers=3,x-systemd.automount,x-systemd.device-timeout=10,timeo=14,x-systemd.idle-timeout=1min  0  0 
+<NAS ip address>:/srv/nfs4/<source_dir1>  /mnt/<source_dir1>  nfs  noauto,vers=3,x-systemd.automount,x-systemd.device-timeout=10,timeo=14,x-systemd.idle-timeout=1min  0  0 
 ```
 
 Reboot and check that mount points work:
 ```bash
 $ reboot
 $ ls /mnt/exthdd
-$ ls /mnt/<shared_dir1>
+$ ls /mnt/<source_dir1>
 ```
 
 ## rsync
@@ -306,8 +307,8 @@ LOG_FILE=/var/log/backpack.log
 ### EDIT THESE ###
 USER_NAME=<username>
 EMAIL=<mail@address.com>
-declare -a SRC_DIRS=("/mnt/shared_dir1" "/mnt/shared_dir2")
-declare -a DST_DIRS=("/mnt/exthdd/shared_dir1" "/mnt/exthdd/shared_dir2")
+DST_DIR=/mnt/exthdd/<opt_subfolder>
+declare -a SRC_DIRS=("/mnt/<source_dir1>" "/mnt/<source_dir2>")
 
 # create empty log file so it only include the last rsync log
 sudo rm $LOG_FILE &> /dev/null
@@ -315,16 +316,20 @@ sudo touch $LOG_FILE
 sudo chown $USER_NAME:$USER_NAME $LOG_FILE
 
 # do rsync for each directory
-for (( i=0; i<${#SRC_DIRS[@]}; i++ ));
+for SRC_DIR in "${SRC_DIRS[@]}"
 do
-  echo -e "\nrsync ${SRC_DIRS[$i]}:\n===========================================================================" >> $LOG_FILE
-  rsync -av --delete --log-file=$LOG_FILE ${SRC_DIRS[$i]} ${DST_DIRS[$i]} &> /dev/null
+  echo -e "\nrsync "${SRC_DIR}":\n===========================================================================" >> $LOG_FILE
+  rsync -av --delete --log-file=$LOG_FILE "$SRC_DIR" "$DST_DIR" &> /dev/null
 done
 
 # mail the log file
+# TODO: 'mail' will not send the log file if it contains too long lines which
+# it does when warnings/errors occurs. Could probably fix issue with script
+# code here, but for now, just send 'mail':s error.
 SEND_ERR=`cat $LOG_FILE | mail -s "$HOSTNAME rsync result" "$EMAIL"`
 [ ! -z "$SEND_ERR" ] && echo "$SEND_ERR" | mail -s "$HOSTNAME send error" "$EMAIL"
 exit 0
+
 ```
 
 ## Backup schemes
