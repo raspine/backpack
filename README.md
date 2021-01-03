@@ -1,6 +1,8 @@
 # backpack
 A recepy for makings backups using a RPi and an external USB HDD (and tejp..).
 
+![backpack](images/backpack.jpg?raw=true)
+
 ## Motivation
 Since making backups manually is extremely boring and easy to forgett,
 backups needs to be simple to do manually and/or automated.
