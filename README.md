@@ -34,11 +34,11 @@ continue with this instruction.
 
 System update:
 
-```bash
+```
 # pacman -Syu
 ```
 
-```bash
+```
 # reboot
 ```
 When the RPi boots up, log in as root and continue with this instruction.
@@ -49,20 +49,20 @@ When the RPi boots up, log in as root and continue with this instruction.
 
 Change root password:
 
-```bash
+```
 # passwd
 ```
 
 Remove default user account and add your own:
 
-```bash
+```
 # userdel alarm
 # useradd -m -G wheel -s /bin/bash <username>
 # passwd <username>
 ```
 
 Install `sudo` and allow for passwordless operation.
-```bash
+```
 # pacman -S sudo
 # visudo
 ## uncomment line '%wheel ALL=(ALL) NOPASSWD: ALL'
@@ -73,19 +73,19 @@ Install `sudo` and allow for passwordless operation.
 
 List all keyboard layouts:
 
-```bash
+```
 # localectl list-keymaps
 ```
 
 Load immediately:
 
-```bash
+```
 # loadkeys uk
 ```
 
 Make persistent:
 
-```bash
+```
 # echo "KEYMAP=uk" > /etc/vconsole.conf
 ```
 
@@ -108,12 +108,12 @@ Gateway=192.168.0.1
 
 Make it effective by restarting the networkd service:
 
-```bash
+```
 # systemctl restart systemd-networkd
 ```
 ## Set hostname
 
-```bash
+```
 # hostnamectl set-hostname <backpackX>
 ```
 
@@ -122,7 +122,7 @@ Make it effective by restarting the networkd service:
 
 Find the matching time zone in /usr/share/zoneinfo/\*/\*. Then:
 
-```bash
+```
 # rm /etc/localtime
 # ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 ```
@@ -142,7 +142,7 @@ I ended up doing the following:
 
 Arch does not enable swap by default so nothing to do here. Check with:
 
-```bash
+```
 # free -h
 ```
 
@@ -151,7 +151,7 @@ Arch does not enable swap by default so nothing to do here. Check with:
 
 Use tmpfs for various locations instead of writing to SD card.
 
-```bash
+```
 # echo "tmpfs   /var/log    tmpfs    defaults,noatime,nosuid,mode=0755,size=40m    0 0" >> /etc/fstab
 # echo "tmpfs   /var/tmp    tmpfs    defaults,noatime,nosuid,size=20m    0 0" >> /etc/fstab
 # echo "tmpfs   /tmp        tmpfs    defaults,noatime,nosuid,size=40m    0 0" >> /etc/fstab
@@ -164,7 +164,7 @@ When using tmpfs the /var/log/journal directory will not be re-created and
 journald will instead write to /run/systemd/journal in a non-persistent way.
 This seems to be the preferred way so no configuration is needed.
 We can also limit the journal size:
-```bash
+```
 # mkdir /etc/systemd/journald.conf.d
 # echo -e "[Journal]
 SystemMaxUse=50M" > /etc/systemd/journald.conf.d/00-journal-size.conf
@@ -174,7 +174,7 @@ SystemMaxUse=50M" > /etc/systemd/journald.conf.d/00-journal-size.conf
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/Msmtp))
 
 Followed the basic setup in the Arch wiki and installed.
-```bash
+```
 # pacman -S msmtp msmtp-mta s-nail
 ```
 
@@ -183,7 +183,7 @@ password and used in the ~/.msmtprc password field.
 
 Test with:
 
-```bash
+```
 $ echo "body" | mail -s "headline" <username@gmail.com>
 ```
 
@@ -192,13 +192,13 @@ $ echo "body" | mail -s "headline" <username@gmail.com>
 
 Lots of info in the Arch wiki. However setup is easy.
 
-```bash
+```
 # pacman -S smartmontools
 ```
 
 Check that the external harddrives has S.M.A.R.T. capabilities:
 
-```bash
+```
 # smartctl --info /dev/sda
 ```
 
@@ -206,7 +206,7 @@ Check that the external harddrives has S.M.A.R.T. capabilities:
 
 To test e-mail notification:
 
-```bash
+```
 # echo "DEVICESCAN -m <username@gmail.com> -M test" >> /etc/smard.conf
 # systemctl restart smartd
 ```
@@ -217,7 +217,7 @@ daily temperature alarms and 45 seems to be an acceptable upper limit.
 
 *Remember to uncomment previous email test line*
 
-```bash
+```
 # echo "DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,45 -m <username@gmail.com>" >> /etc/smartd.conf
 # systemctl enable smartd
 ```
@@ -230,20 +230,20 @@ Another option would be FAT32, but it can't handle file sizes larger than 4GB.
 
 For our backup we need to write to NTFS partitions so install ntfs-3g:
 
-```bash
+```
 # pacman -S ntfs-3g
 ```
 
 Make sure the external HDD is plugged in and check its fs type (should be
 listed as /dev/sda1)
 
-```bash
+```
 # lsblk -f
 ```
 
 In case the HDD needs formating:
 
-```bash
+```
 # fdisk /dev/sdX
 ## run commands 'o', 'n' <accept all defaults>, 't' <07>, 'w'
 # mkfs.ntfs -Q -L <diskLabel> /dev/sdX1
@@ -255,7 +255,7 @@ In case the HDD needs formating:
 
 Create mount points source/destination directories:
 
-```bash
+```
 # mkdir -p /mnt/exthdd/<opt_subfolder>
 # mkdir -p /mnt/<source_dir1>
 # chown -R <username>:<username> /mnt/<source_dir1>
@@ -264,7 +264,7 @@ Create mount points source/destination directories:
 
 As my NAS provides NFS shares, install nfs-utils:
 
-```bash
+```
 # pacman -S nfs-utils
 ```
 
@@ -279,7 +279,7 @@ in /etc/fstab:
 ```
 
 Reboot and check that mount points work:
-```bash
+```
 $ reboot
 $ ls /mnt/exthdd
 $ ls /mnt/<source_dir1>
@@ -291,12 +291,12 @@ $ ls /mnt/<source_dir1>
 rsync is used to copy file from shared network directories to the external HDD.
 From now on login as normal user and use `sudo` where needed.
 
-```bash
+```
 $ sudo pacman -S rsync
 ```
 
 We put the rsync commands in a bash script along with some other lines:
-```bash
+```
 $ touch /home/<username>/rsync_nas.sh
 $ chnmod +x /home/<username>/rsync_nas.sh
 ```
@@ -352,7 +352,7 @@ As all config/script files, specific to the backup service, lives under
 a specific user account I create a systemd *user* service that runs
 rsync_nas.sh.
 
-```bash
+```
 $ mkdir -p ~/.config/systemd/user
 $ echo -e "[Unit]
 Description=rsync job
@@ -363,7 +363,7 @@ ExecStart=/bin/bash /home/<username>/rsync_nas.sh" > ~/.config/systemd/user/rsyn
 ```
 
 Create a systemd timer that runs above service at regular intervals.
-```bash
+```
 $ echo -e "[Unit]
 Description=Run rsync_nas first Saturday every month
 
@@ -376,7 +376,7 @@ WantedBy=timers.target" > ~/.config/systemd/user/rsync_nas.timer
 ```
 
 Enable/start timer service.
-```bash
+```
 $ systemctl --user daemon-reload
 $ systemctl --user enable rsync_nas.timer
 # This line makes the rsync_nas.timer service start at boot
