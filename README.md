@@ -8,14 +8,22 @@ Since making backups manually is extremely boring and easy to forgett,
 backups needs to be simple to do manually and/or automated.
 
 [rsync](https://rsync.samba.org/) is our champion that perfectly aligns
-directories and files between two HDD:s, however most guides I found only cover
-the rsync part and I wanted a more complete instruction covering:
+directories and files between the NAS and the backup HDD, however most guides
+I found only cover the rsync part and I wanted a more complete instruction
+covering:
 
 * system installation from scratch with typical config steps
 * long term operation such as avoid wearing out the RPi SD card
-* S.M.A.R.T monitoring of the HDD with e-mail notification
+* S.M.A.R.T monitoring of the USB HDD with e-mail notification
 * rsync with e-mail notification
-* both automatic (on-line) backups and manual (off-line) backups schemes
+
+Two types of backup schemes are used. I refer to them as on-line backups and
+off-line backups. on-line backups sits on the same network and are always
+powered up. These backups use systemd to schedule backup cycles.
+
+Off-line backups are not powered up and located elsewhere. I bring these
+backups to my home e.g. two times per year, connect the HDD USB cable to the
+RPi and just run rsync_nas.sh manually.
 
 This guide uses a step-by-step approach so nothing is forgotten. For details
 about the various steps, refer to the links in the Arch wiki.
@@ -336,17 +344,7 @@ exit 0
 
 ```
 
-## Backup schemes
-Two types of backups are used. I refer to them as on-line backups and off-line
-backups.
-on-line backups sits on the same network and are always powered up. These
-backups use systemd (see below) to schedule backup cycles.
-
-Off-line backups are not powered up and located elsewhere. I bring these
-backups to my home e.g. two times per year, connect the USB cable to the RPi
-and just run rsync_nas.sh manually.
-
-### Automatic/scheduled backups
+## Automatic/scheduled backups
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/Systemd/Timers))
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/systemd/User))
 
