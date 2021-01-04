@@ -23,7 +23,7 @@ powered up. These backups use systemd to schedule backup cycles.
 
 Off-line backups are not powered up and located elsewhere. I bring these
 backups to my home e.g. two times per year, connect the HDD USB cable to the
-RPi and just run rsync_nas.sh manually.
+RPi and just run rsync_nas.sh (see below) manually.
 
 This guide uses a step-by-step approach so nothing is forgotten. For details
 about the various steps, refer to the links in the Arch wiki.
