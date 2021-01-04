@@ -149,7 +149,8 @@ Arch does not enable swap by default so nothing to do here. Check with:
 ### tmpfs
 ([Arch wiki ref](https://wiki.archlinux.org/index.php/tmpfs))
 
-Use tmpfs for various locations instead of writing to SD card.
+Use tmpfs for various locations instead of writing to SD card. In particular
+use /var/log for the rsync log so its not written to flash for every backup.
 
 ```
 # echo "tmpfs   /var/log    tmpfs    defaults,noatime,nosuid,mode=0755,size=40m    0 0" >> /etc/fstab
@@ -166,8 +167,7 @@ This seems to be the preferred way so no configuration is needed.
 We can also limit the journal size:
 ```
 # mkdir /etc/systemd/journald.conf.d
-# echo -e "[Journal]
-SystemMaxUse=50M" > /etc/systemd/journald.conf.d/00-journal-size.conf
+# echo -e "[Journal] SystemMaxUse=50M" > /etc/systemd/journald.conf.d/00-journal-size.conf
 ```
 
 ## Configure email notification
@@ -256,10 +256,10 @@ In case the HDD needs formating:
 Create mount points source/destination directories:
 
 ```
-# mkdir -p /mnt/exthdd/<opt_subfolder>
-# mkdir -p /mnt/<source_dir1>
-# chown -R <username>:<username> /mnt/<source_dir1>
-## repeat for all <source_dir1> to backup
+# mkdir -p /mnt/exthdd
+## repeat for every <backup_dir> to backup
+# mkdir -p /mnt/<backup_dir1>
+# chown -R <username>:<username> /mnt
 ```
 
 As my NAS provides NFS shares, install nfs-utils:
@@ -268,21 +268,23 @@ As my NAS provides NFS shares, install nfs-utils:
 # pacman -S nfs-utils
 ```
 
-Mount the network shared directories (backup from) and the external HDD (backup to)
-in /etc/fstab:
+Edit `/etc/fstab` so our network shared directories (source) and the external
+HDD (destination) are mounted at boot as:
 
 ```
 ...
 
 /dev/sda1  /mnt/exthdd  ntfs  defaults  0  0
-<NAS ip address>:/srv/nfs4/<source_dir1>  /mnt/<source_dir1>  nfs  noauto,vers=3,x-systemd.automount,x-systemd.device-timeout=10,timeo=14,x-systemd.idle-timeout=1min  0  0 
+# repeat for every <backup_dir> to backup
+<NAS ip address>:/srv/nfs4/<backup_dir1>  /mnt/<backup_dir1>  nfs  noauto,vers=3,x-systemd.automount,x-systemd.device-timeout=10,timeo=14,x-systemd.idle-timeout=1min  0  0 
 ```
 
 Reboot and check that mount points work:
 ```
-$ reboot
+# reboot
+## login as normal user
 $ ls /mnt/exthdd
-$ ls /mnt/<source_dir1>
+$ ls /mnt/<backup_dir1>
 ```
 
 ## rsync
@@ -310,7 +312,7 @@ LOG_FILE=/var/log/backpack.log
 USER_NAME=<username>
 EMAIL=<mail@address.com>
 DST_DIR=/mnt/exthdd/<opt_subfolder>
-declare -a SRC_DIRS=("/mnt/<source_dir1>" "/mnt/<source_dir2>")
+declare -a SRC_DIRS=("/mnt/<backup_dir1>" "/mnt/<backup_dir2>")
 
 # create empty log file so it only include the last rsync log
 sudo rm $LOG_FILE &> /dev/null
